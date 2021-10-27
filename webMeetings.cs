@@ -49,8 +49,15 @@ namespace dcinc.api
                     {
                         return new BadRequestObjectResult("startDateTime is invalid. Please specify the date and time after tomorrow.");
                     }
+                    
+                    // Web会議URLが未指定もしくは空であれば無効な値とする。
+                    var meetingUrl = data?.meetingUrl;
+                    if(string.IsNullOrEmpty(meetingUrl))
+                    {
+                        return new BadRequestObjectResult("meetingUrl is invalid. Please enter a url.");
+                    }
                     // Web会議情報を登録
-                    message = await AddWebMeetings(documentsOut, name, startDateTime.Value);
+                    message = await AddWebMeetings(documentsOut, name, startDateTime.Value, meetingUrl);
                     break;
 
                 default:
@@ -66,7 +73,8 @@ namespace dcinc.api
             collectionName: "SlackChannels",
             ConnectionStringSetting = "CosmosDbConnectionString")]IAsyncCollector<dynamic> documentsOut,
             string name,
-            DateTime startDateTime /*他の引数は未実装*/)
+            DateTime startDateTime,
+            string meetingUrl /*他の引数は未実装*/)
         {
             // Add a JSON document to the output container.
             var documentItem = new
@@ -75,7 +83,8 @@ namespace dcinc.api
                 id = System.Guid.NewGuid().ToString(),
                 name = name,
                 date = startDateTime.Date.ToString("yyyy-MM-dd"),
-                startDateTime = $"{startDateTime:O}"
+                startDateTime = $"{startDateTime:O}",
+                meetingUrl = meetingUrl
             };
 
             await documentsOut.AddAsync(documentItem);
