@@ -38,7 +38,7 @@ namespace dcinc.api.entities
         /// <summary>
         /// 登録者
         /// </summary>
-        public string RegisteredAt { get; set; }
+        public string RegisteredBy { get; set; }
         /// <summary>
         /// 通知先のSlackチャンネル
         /// </summary>

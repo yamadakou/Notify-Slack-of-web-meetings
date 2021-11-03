@@ -42,7 +42,7 @@ namespace dcinc.api
                     webMeeting.Name = data?.name;
                     webMeeting.StartDateTime = data?.startDateTime;
                     webMeeting.Url = data?.meetingUrl;
-                    webMeeting.RegisteredAt = data?.registeredAt;
+                    webMeeting.RegisteredBy = data?.registeredBy;
                     webMeeting.SlackChannelId = data?.slackChannelId;
 
                     // 入力値チェックを行う
