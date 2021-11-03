@@ -7,6 +7,8 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using dcinc.api.entities;
+using FluentValidation;
 
 namespace dcinc.api
 {
@@ -35,29 +37,20 @@ namespace dcinc.api
                     // リクエストのBODYからパラメータ取得
                     string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                     dynamic data = JsonConvert.DeserializeObject(requestBody);
-                    string name = data?.name;
-
-                    // 会議名が未指定の場合は無効な値とする。
-                    if(string.IsNullOrEmpty(name))
-                    {
-                        return new BadRequestObjectResult("name is null or empty");
-                    }
-                    DateTime? startDateTime = data?.startDateTime;
-
-                    // 日付が未指定もしくは今日以前の場合は無効な値とする。
-                    if(!startDateTime.HasValue || startDateTime <= DateTime.Today)
-                    {
-                        return new BadRequestObjectResult("startDateTime is invalid. Please specify the date and time after tomorrow.");
-                    }
                     
-                    // Web会議URLが未指定もしくは空であれば無効な値とする。
-                    var meetingUrl = data?.meetingUrl;
-                    if(string.IsNullOrEmpty(meetingUrl))
-                    {
-                        return new BadRequestObjectResult("meetingUrl is invalid. Please enter a url.");
-                    }
+                    var webMeeting = new WebMeeting();
+                    webMeeting.Name = data?.name;
+                    webMeeting.StartDateTime = data?.startDateTime;
+                    webMeeting.Url = data?.meetingUrl;
+                    webMeeting.RegisteredAt = data?.registeredAt;
+                    webMeeting.SlackChannelId = data?.slackChannelId;
+
+                    // 入力値チェックを行う
+                    var webMeetingValidator = new WebMeetingValidator();
+                    webMeetingValidator.ValidateAndThrow(webMeeting);
+                    
                     // Web会議情報を登録
-                    message = await AddWebMeetings(documentsOut, name, startDateTime.Value, meetingUrl);
+                    message = await AddWebMeetings(documentsOut, webMeeting);
                     break;
 
                 default:
@@ -68,23 +61,12 @@ namespace dcinc.api
         }
 
         private static async Task<string> AddWebMeetings(
-            [CosmosDB(
-            databaseName: "Notify-Slack-of-web-meetings-db",
-            collectionName: "SlackChannels",
-            ConnectionStringSetting = "CosmosDbConnectionString")]IAsyncCollector<dynamic> documentsOut,
-            string name,
-            DateTime startDateTime,
-            string meetingUrl /*他の引数は未実装*/)
+            IAsyncCollector<dynamic> documentsOut, WebMeeting webMeeting)
         {
             // Add a JSON document to the output container.
             var documentItem = new
             {
-                // create a random ID
-                id = System.Guid.NewGuid().ToString(),
-                name = name,
-                date = startDateTime.Date.ToString("yyyy-MM-dd"),
-                startDateTime = $"{startDateTime:O}",
-                meetingUrl = meetingUrl
+                webMeeting
             };
 
             await documentsOut.AddAsync(documentItem);
