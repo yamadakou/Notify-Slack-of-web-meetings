@@ -1,4 +1,5 @@
 using System;
+using Newtonsoft.Json;
 
 namespace dcinc.api.entities
 {
@@ -30,7 +31,8 @@ namespace dcinc.api.entities
         /// <summary>
         /// Web会議の日付
         /// </summary>
-        public DateTime Date => StartDateTime.Date;
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.UnixDateTimeConverter))]
+        public DateTime Date => StartDateTime.Date.ToUniversalTime();
         /// <summary>
         /// Web会議のURL
         /// </summary>

@@ -12,14 +12,14 @@ using FluentValidation;
 
 namespace dcinc.api
 {
-    public static class webMeetings
+    public static class SlackChannels
     {
-        [FunctionName("webMeetings")]
+        [FunctionName("SlackChannels")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            [CosmosDB(
+                        [CosmosDB(
                 databaseName: "Notify-Slack-of-web-meetings-db",
-                collectionName: "WebMeetings",
+                collectionName: "SlackChannels",
                 ConnectionStringSetting = "CosmosDbConnectionString")]IAsyncCollector<dynamic> documentsOut,
             ILogger log)
         {
@@ -39,19 +39,17 @@ namespace dcinc.api
                         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                         dynamic data = JsonConvert.DeserializeObject(requestBody);
                         
-                        var webMeeting = new WebMeeting();
-                        webMeeting.Name = data?.name;
-                        webMeeting.StartDateTime = data?.startDateTime;
-                        webMeeting.Url = data?.meetingUrl;
-                        webMeeting.RegisteredBy = data?.registeredBy;
-                        webMeeting.SlackChannelId = data?.slackChannelId;
+                        var slackChannels = new SlackChannel();
+                        slackChannels.Name = data?.name;
+                        slackChannels.WebhookUrl = data?.webhookUrl;
+                        slackChannels.RegisteredBy = data?.registeredBy;
 
                         // 入力値チェックを行う
-                        var webMeetingValidator = new WebMeetingValidator();
-                        webMeetingValidator.ValidateAndThrow(webMeeting);
+                        var slackChannelValidator = new SlackChannelValidator();
+                        slackChannelValidator.ValidateAndThrow(slackChannels);
                         
-                        // Web会議情報を登録
-                        message = await AddWebMeetings(documentsOut, webMeeting);
+                        // slackチャンネル情報を登録
+                        message = await AddSlackChannels(documentsOut, slackChannels);
                         break;
 
                     default:
@@ -68,18 +66,18 @@ namespace dcinc.api
         }
 
         /// <summary>
-        /// Web会議情報を登録する
+        /// Slackチャンネル情報を登録する
         /// </summary>
         /// <param name="documentsOut">CosmosDBのドキュメント</param>
-        /// <param name="webMeeting">Web会議情報</param>
+        /// <param name="slackChannel">Slackチャンネルの情報</param>
         /// <returns></returns>
-        private static async Task<string> AddWebMeetings(
-            IAsyncCollector<dynamic> documentsOut, WebMeeting webMeeting)
+        private static async Task<string> AddSlackChannels(
+            IAsyncCollector<dynamic> documentsOut, SlackChannel slackChannel)
         {
             // Add a JSON document to the output container.
             var documentItem = new
             {
-                webMeeting
+                slackChannel
             };
 
             await documentsOut.AddAsync(documentItem);
