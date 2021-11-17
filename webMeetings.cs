@@ -1,14 +1,20 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Linq;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Documents.Client;
+using Microsoft.Azure.Documents.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using dcinc.api.entities;
+using Newtonsoft.Json.Serialization;
 using FluentValidation;
+using dcinc.api.entities;
+using dcinc.api.queries;
 
 namespace dcinc.api
 {
@@ -21,6 +27,10 @@ namespace dcinc.api
                 databaseName: "Notify-Slack-of-web-meetings-db",
                 collectionName: "WebMeetings",
                 ConnectionStringSetting = "CosmosDbConnectionString")]IAsyncCollector<dynamic> documentsOut,
+            [CosmosDB(
+                databaseName: "notify-slack-of-web-meeting-db",
+                collectionName: "WebMeetings",
+                ConnectionStringSetting = "CosmosDbConnectionString")]DocumentClient client,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
@@ -31,7 +41,42 @@ namespace dcinc.api
                 {
                     case "GET":
                         log.LogInformation("GET webMeetings");
+
+                        // クエリパラメータから検索条件パラメータを設定
+                        var queryParameter = new WebMeetingsQueryParameter();
+                        string fromDateString = req.Query["fromDate"];
+                        if(!string.IsNullOrEmpty(fromDateString) && !string.IsNullOrWhiteSpace(fromDateString)) 
+                        {
+                            var fromDate = Convert.ToDateTime(fromDateString);
+                            queryParameter.FromDate = fromDate;
+                        }
+                        else
+                        {
+                            queryParameter.FromDate = DateTime.UnixEpoch;
+                        }
+                        
+                        string toDateString = req.Query["toDate"];
+                        if(!string.IsNullOrEmpty(toDateString) && !string.IsNullOrWhiteSpace(toDateString)) 
+                        {
+                            var toDate = Convert.ToDateTime(toDateString);
+                            queryParameter.ToDate = toDate;
+                        }
+                        else
+                        {
+                            queryParameter.ToDate = DateTime.Today;
+                        }
+                        
+                        queryParameter.RegisteredBy = req.Query["registeredBy"];
+                        queryParameter.SlackChannelId = req.Query["slackChannelId"];
+
+                        // 入力値チェックを行う
+                        var queryParameterValidator = new WebMeetingsQueryParameterValidator();
+                        queryParameterValidator.ValidateAndThrow(queryParameter);
+
+                        // Web会議情報を取得
+                        message = await GetWebMeetings(client, queryParameter);
                         break;
+
                     case "POST":
                         log.LogInformation("POST webMeetings");
                         
@@ -41,7 +86,7 @@ namespace dcinc.api
                         
                         var webMeeting = new WebMeeting();
                         webMeeting.Name = data?.name;
-                        webMeeting.StartDateTime = data?.startDateTime;
+                        webMeeting.StartDateTime = data?.startDateTime ?? DateTime.UnixEpoch;
                         webMeeting.Url = data?.meetingUrl;
                         webMeeting.RegisteredBy = data?.registeredBy;
                         webMeeting.SlackChannelId = data?.slackChannelId;
@@ -84,6 +129,37 @@ namespace dcinc.api
 
             await documentsOut.AddAsync(documentItem);
             return JsonConvert.SerializeObject(documentItem);
+        }
+
+                /// <summary>
+        /// Web会議情報一覧を取得する。
+        /// </summary>
+        /// <param name="client">CosmosDBのドキュメントクライアント</param>
+        /// <param name="queryParameter">抽出条件パラメータ</param>
+        /// <returns></returns>
+        private static async Task<string> GetWebMeetings(
+                    DocumentClient client,
+                    WebMeetingsQueryParameter queryParameter
+                    ) {
+            // Get a JSON document from the container.
+            var collectionUri = UriFactory.CreateDocumentCollectionUri("Notify-Slack-of-web-meetings-db", "WebMeetings");
+            var query = client.CreateDocumentQuery<WebMeeting>(collectionUri, new FeedOptions{ EnableCrossPartitionQuery = true, PopulateQueryMetrics = true})
+                .Where(w => 
+                    (queryParameter.HasRegisteredBy ? w.RegisteredBy == queryParameter.RegisteredBy : true)
+                && (queryParameter.HasSlackChannelId ? w.SlackChannelId == queryParameter.SlackChannelId : true)
+                && (queryParameter.HasFromDate ? queryParameter.FromDateUtcValue <= w.Date : true)
+                && (queryParameter.HasToDate ? w.Date <= queryParameter.ToDateUtcValue : true))
+                .AsDocumentQuery();
+
+            var documentItems = new List<WebMeeting>();
+            while (query.HasMoreResults)
+            {
+                foreach (var documentItem in await query.ExecuteNextAsync<WebMeeting>())
+                {
+                    documentItems.Add(documentItem);
+                }
+            }
+            return JsonConvert.SerializeObject(documentItems);
         }
     }
 }
