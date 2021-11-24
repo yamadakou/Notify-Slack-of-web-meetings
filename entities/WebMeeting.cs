@@ -46,6 +46,12 @@ namespace dcinc.api.entities
         /// </summary>
         [JsonProperty("url")]
         public string Url { get; set; }
+
+        /// <summary>
+        /// 登録日時
+        /// </summary>
+        [JsonProperty("registeredAt")]
+        public DateTime RegisteredAt { get; set; }
         
         /// <summary>
         /// 登録者
