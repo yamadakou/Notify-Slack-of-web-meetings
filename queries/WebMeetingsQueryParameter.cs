@@ -27,6 +27,11 @@ namespace dcinc.api.queries
         #region プロパティ
 
         /// <summary>
+        /// 一意とするID
+        /// </summary>
+        public string Id { get; set; }
+
+        /// <summary>
         /// Web会議の日付範囲の開始日
         /// </summary>
         public string FromDate
@@ -135,6 +140,10 @@ namespace dcinc.api.queries
             if (this.HasToDate)
             {
                 expr = expr.And(w => w.Date <= this.ToDateUtcValue);
+            }
+            if (!string.IsNullOrEmpty(this.Id))
+            {
+                expr = expr.And(w => w.Id == this.Id);
             }
             if (expr == original)
             {

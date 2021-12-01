@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Extensions.Logging;
@@ -33,7 +34,7 @@ namespace dcinc.api
         public static async Task<IActionResult> AddWebMeetings(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "WebMeetings")] HttpRequest req,
             [CosmosDB(
-                databaseName: "notify-slack-of-web-meeting-db",
+                databaseName: "Notify-Slack-of-web-meetings-db",
                 collectionName: "WebMeetings",
                 ConnectionStringSetting = "CosmosDbConnectionString")
                 ]IAsyncCollector<dynamic> documentsOut,
@@ -86,7 +87,7 @@ namespace dcinc.api
 
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "WebMeetings")] HttpRequest req,
             [CosmosDB(
-                databaseName: "notify-slack-of-web-meeting-db",
+                databaseName: "Notify-Slack-of-web-meetings-db",
                 collectionName: "WebMeetings",
                 ConnectionStringSetting = "CosmosDbConnectionString")
                 ]DocumentClient client,
@@ -113,7 +114,98 @@ namespace dcinc.api
                 queryParameterValidator.ValidateAndThrow(queryParameter);
 
                 // Web会議情報を取得
-                message = await GetWebMeetings(client, queryParameter);
+                message = JsonConvert.SerializeObject(await GetWebMeetings(client, queryParameter, log));
+            }
+            catch (Exception ex)
+            {
+                return new BadRequestObjectResult(ex);
+            }
+
+            return new OkObjectResult($"This HTTP triggered function executed successfully.\n{message}");
+        }
+
+        /// <summary>
+        /// Web会議情報を取得する。
+        /// </summary>
+        /// <param name="req">HTTPリクエスト</param>
+        /// <param name="client">CosmosDBのドキュメントクライアント</param>
+        /// <param name="log">ロガー</param>
+        /// <returns>Web会議情報</returns>
+        [FunctionName("GetWebMeetingById")]
+        public static async Task<IActionResult> GetWebMeetingById(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "WebMeetings/{id}")] HttpRequest req,
+            [CosmosDB(
+                databaseName: "Notify-Slack-of-web-meetings-db",
+                collectionName: "WebMeetings",
+                ConnectionStringSetting = "CosmosDbConnectionString")
+                ]DocumentClient client,
+            ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
+            string message = string.Empty;
+
+            try
+            {
+                string id = req.RouteValues["id"].ToString();
+                log.LogInformation($"GET webMeetings/{id}");
+
+                // クエリパラメータから検索条件パラメータを設定
+                WebMeetingsQueryParameter queryParameter = new WebMeetingsQueryParameter()
+                {
+                    Id = id
+                };
+
+                // Web会議情報を取得
+                var documentItems = await GetWebMeetings(client, queryParameter, log);
+
+                if(!documentItems.Any())
+                {
+                    return new BadRequestObjectResult($"Target item not found. Id={id}");
+                }
+                message = JsonConvert.SerializeObject(documentItems);
+            }
+            catch (Exception ex)
+            {
+                return new BadRequestObjectResult(ex);
+            }
+
+            return new OkObjectResult($"This HTTP triggered function executed successfully.\n{message}");
+        }
+
+        /// <summary>
+        /// Web会議情報を削除する。
+        /// </summary>
+        /// <param name="req">HTTPリクエスト</param>
+        /// <param name="client">CosmosDBのドキュメントクライアント</param>
+        /// <param name="log">ロガー</param>
+        /// <returns>削除したWeb会議情報</returns>
+        [FunctionName("DeleteWebMeetingById")]
+        public static async Task<IActionResult> DeleteWebMeetingById(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "WebMeetings/{id}")] HttpRequest req,
+            [CosmosDB(
+                databaseName: "Notify-Slack-of-web-meetings-db",
+                collectionName: "WebMeetings",
+                ConnectionStringSetting = "CosmosDbConnectionString")
+                ]DocumentClient client,
+            ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
+            string message = string.Empty;
+
+            try
+            {
+                string id = req.RouteValues["id"].ToString();
+                log.LogInformation($"DELETE webMeetings/{id}");
+
+                // Web会議情報を削除
+                var documentItems = await DeleteWebMeetings(client, id, log);
+
+                if(!documentItems.Any())
+                {
+                    return new BadRequestObjectResult($"Target item not found. Id={id}");
+                }
+                message = JsonConvert.SerializeObject(documentItems);
+
             }
             catch (Exception ex)
             {
@@ -151,13 +243,15 @@ namespace dcinc.api
         /// </summary>
         /// <param name="client">CosmosDBのドキュメントクライアント</param>
         /// <param name="queryParameter">抽出条件パラメータ</param>
-        /// <returns></returns>
-        private static async Task<string> GetWebMeetings(
+        /// <param name="log">ロガー</param>
+        /// <returns>Web会議情報一覧</returns>        
+        private static async Task<IEnumerable<WebMeeting>> GetWebMeetings(
                     DocumentClient client,
-                    WebMeetingsQueryParameter queryParameter)
+                    WebMeetingsQueryParameter queryParameter,
+                    ILogger log)
         {
             // Get a JSON document from the container.
-            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("notify-slack-of-web-meeting-db", "WebMeetings");
+            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("Notify-Slack-of-web-meetings-db", "WebMeetings");
             IDocumentQuery<WebMeeting> query = client.CreateDocumentQuery<WebMeeting>(collectionUri, new FeedOptions { EnableCrossPartitionQuery = true, PopulateQueryMetrics = true })
                 .Where(queryParameter.GetWhereExpression())
                 .AsDocumentQuery();
@@ -170,7 +264,43 @@ namespace dcinc.api
                     documentItems.Add(documentItem);
                 }
             }
-            return JsonConvert.SerializeObject(documentItems);
+            log.LogInformation(query.ToString());
+            return documentItems;
+        }
+
+        /// <summary>
+        /// Web会議情報を削除する。
+        /// </summary>
+        /// <param name="client">CosmosDBのドキュメントクライアント</param>
+        /// <param name="id">削除するWeb会議情報のID</param>
+        /// <param name="log">ロガー</param>
+        /// <returns>削除したWeb会議情報</returns>
+        private static async Task<IEnumerable<WebMeeting>> DeleteWebMeetings(
+            DocumentClient client,
+            string id,
+            ILogger log)
+        {
+            // 削除に必要なパーティションキーを取得するため、Web会議情報を取得後に削除する。
+
+            // クエリパラメータに削除するWeb会議情報のIDを設定
+            WebMeetingsQueryParameter queryParameter = new WebMeetingsQueryParameter()
+            {
+                Id = id
+            };
+
+            // Web会議情報を取得
+            var documentItems = await GetWebMeetings(client, queryParameter, log);
+            foreach (var documentItem in documentItems)
+            {
+                // パーティションキーを取得
+                var partitionKey = documentItem.DateUnixTimeSeconds;
+                // Web会議情報を削除
+                // Delete a JSON document from the container.
+                Uri documentUri = UriFactory.CreateDocumentUri("Notify-Slack-of-web-meetings-db", "WebMeetings", id);
+                await client.DeleteDocumentAsync(documentUri, new RequestOptions() { PartitionKey = new PartitionKey(partitionKey) });
+            }
+
+            return documentItems;
         }
 
         #endregion
