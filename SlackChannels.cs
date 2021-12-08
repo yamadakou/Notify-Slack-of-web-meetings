@@ -142,7 +142,7 @@ namespace dcinc.api
         /// <param name="queryParameter">抽出条件パラメータ</param>
         /// <param name="log">ロガー</param>
         /// <returns>Slackチャンネル情報一覧</returns>
-        private static async Task<string> GetSlackChannels(
+        internal static async Task<string> GetSlackChannels(
             DocumentClient client,
             SlackChannelsQueryParameter queryParameter,
             ILogger log)
