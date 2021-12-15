@@ -6,6 +6,7 @@ using dcinc.api.entities;
 using dcinc.api.queries;
 using Microsoft.Azure.Documents.Client;
 using dcinc.api;
+using System.Linq;
 
 namespace dcinc.jobs
 {
@@ -20,6 +21,7 @@ namespace dcinc.jobs
                 ]DocumentClient client,
         ILogger log)
         {
+            // 原罪日のWeb会議情報を取得する
             var today = DateTime.UtcNow.ToString("YYYY-MM-DD");
             var webMeetingsParam = new WebMeetingsQueryParameter()
             {
@@ -27,9 +29,16 @@ namespace dcinc.jobs
                 ToDate = today
             };
 
-            var webMeeting = webMeetings.GetWebMeetings(client, webMeetingsParam, log);
-            //var slackChannel = SlackChannels.GetSlackChannels();
+            // 取得したWeb会議情報のSlackチャンネルを取得する
+            var webMeetings = WebMeetings.GetWebMeetings(client, webMeetingsParam, log);
+            var slackChannelIds = webMeetings.Result.Select(webMeeting => webMeeting.SlackChannelId).Distinct();
+            var slackChannelParams = new SlackChannelsQueryParameter{
+                Ids = string.Join(", ", slackChannelIds)
+            };
+            var slackChannels = SlackChannels.GetSlackChannels(client, slackChannelParams, log);
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+        
+            // Slackに通知する
         }
     }
 }

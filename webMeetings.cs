@@ -19,7 +19,7 @@ using dcinc.api.queries;
 
 namespace dcinc.api
 {
-    public static class webMeetings
+    public static class WebMeetings
     {
         #region 公開サービス
 

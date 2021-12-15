@@ -1,5 +1,7 @@
 using System;
 using System.Linq.Expressions;
+using System.Collections.Generic;
+
 using LinqKit;
 using dcinc.api.entities;
 
@@ -16,14 +18,29 @@ namespace dcinc.api.queries
         /// 一意とするID
         /// </summary>
         public string Id { get; set; }
+        
+        // TODO Id削除してIdsにする。山田さんのコミット。
+        // https://github.com/yamadakou/notify-slack-of-web-meeting/commit/7501208cf6787021353dde1ccb5df87c5d351d63
+        /// <summary>
+        /// 一意とするID一覧（カンマ区切り）
+        /// </summary>
+        public string Ids { get; set; }
+
+        /// <summary>
+        /// 一意とするID一覧
+        /// </summary>
+        public IEnumerable<string> IdValues { get; set; }
+        
         /// <summary>
         /// Slackチャンネル名
         /// </summary>
         public string Name { get; set; }
+        
         /// <summary>
         /// SlackチャンネルのWebhook URL
         /// </summary>
         public string WebhookUrl { get; set; }
+        
         /// <summary>
         /// 登録者
         /// </summary>
