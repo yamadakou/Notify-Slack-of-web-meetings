@@ -157,9 +157,9 @@ namespace dcinc.api.queries
             {
                 expr = expr.And(w => w.Date <= this.ToDateUtcValue);
             }
-            if (!string.IsNullOrEmpty(this.Ids))
+            if (this.HasIds)
             {
-                expr = expr.And(w => w.Id == this.Ids);
+                expr = expr.And(s => this.IdValues.Contains(s.Id));
             }
             if (expr == original)
             {
