@@ -67,7 +67,7 @@ namespace dcinc.api
                 return new BadRequestObjectResult(ex);
             }
 
-            return new OkObjectResult($"This HTTP triggered function executed successfully.\n{message}");
+            return new OkObjectResult(message);
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace dcinc.api
                 return new BadRequestObjectResult(ex);
             }
 
-            return new OkObjectResult($"This HTTP triggered function executed successfully.\n{message}");
+            return new OkObjectResult(message);
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace dcinc.api
                 return new BadRequestObjectResult($"Target item not found. Id={id}");
             }
 
-            return new OkObjectResult($"This HTTP triggered function executed successfully.\n{JsonConvert.SerializeObject(slackChannel)}");
+            return new OkObjectResult(JsonConvert.SerializeObject(slackChannel));
         }
         #endregion
 
@@ -243,7 +243,7 @@ namespace dcinc.api
                 return new BadRequestObjectResult(ex);
             }
 
-            return new OkObjectResult($"This HTTP triggered function executed successfully.\n{message}");
+            return new OkObjectResult(message);
         }
 
         /// <summary>
