@@ -93,6 +93,21 @@ namespace dcinc.api
                 ]DocumentClient client,
             ILogger log)
         {
+            var email = req.Headers["x-nsw-email-address"];
+            var authKey = req.Headers["x-nsw-auth-key"];
+
+            // クエリパラメータから検索条件パラメータを設定
+            UsersQueryParameter getUserqueryParameter = new UsersQueryParameter()
+            {
+                EmailAddress = email,
+                AuthorizationKey = authKey
+            };
+            
+            //TODO リクエストヘッダが無ければ認可失敗
+
+            var users = await Users.GetUsersAsync(client, getUserqueryParameter,log);
+            if(!users.Any()) return new BadRequestObjectResult("認証に失敗ししました。"){StatusCode = StatusCodes.Status403Forbidden};
+
             log.LogInformation("C# HTTP trigger function processed a request.");
             string message = string.Empty;
 
