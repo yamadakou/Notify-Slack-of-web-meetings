@@ -93,6 +93,9 @@ namespace dcinc.api
                 ]DocumentClient client,
             ILogger log)
         {
+            if(!await AuthorizationUtility.CheckAuthorization(client, req, log)) 
+                return new BadRequestObjectResult("認証に失敗しました。"){StatusCode = StatusCodes.Status403Forbidden}; 
+
             log.LogInformation("C# HTTP trigger function processed a request.");
             string message = string.Empty;
 

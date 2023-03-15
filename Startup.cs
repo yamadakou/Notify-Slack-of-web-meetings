@@ -10,6 +10,8 @@ namespace dcinc.jobs
         public override void Configure(IFunctionsHostBuilder builder)
         {
             builder.Services.AddHttpClient();
+
+            // TODO 認可の確認でFilterできるか検証
         }
     }
 }
