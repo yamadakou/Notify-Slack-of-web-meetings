@@ -348,3 +348,5 @@ Visual Studio Code で、ビルドと Azure Functions への発行ができる�
 ## （関連リポジトリ）
 * Notify Slack of web meeting CLI
   * https://github.com/yamadakou/notify-slack-of-web-meeting.cli
+* Notify Slack of web meetings Admin
+  * https://github.com/yamadakou/Notify-Slack-of-web-meetings-Admin
