@@ -222,7 +222,7 @@ REST APIの呼び出しには以下のヘッダ情報が必要です。
 Azure Functions と Azure Cosmos DB を利用します。
 * Azure Cosmos DB アカウントに以下の Database および Container を作成する。
   * Database
-    * Name: notify-slack-of-web-meeting-db
+    * Name: Notify-Slack-of-web-meetings-db
   * Container
     * Web会議情報
       * Name: WebMeetings
@@ -238,10 +238,11 @@ Azure Functions と Azure Cosmos DB を利用します。
 
 ### ビルド環境
 Visual Studio Code で、ビルドと Azure Functions への発行ができるよう、以下の環境を整える。
-  * .NET Core 3.1 SDK
-    * https://dotnet.microsoft.com/en-us/download/dotnet/3.1
-  * Azure Functions Core Tools バージョン 3.x
-    * https://docs.microsoft.com/ja-jp/azure/azure-functions/functions-run-local?tabs=v3%2Cwindows%2Ccsharp%2Cportal%2Cbash#install-the-azure-functions-core-tools
+  * .NET 6.0 SDK
+    * https://dotnet.microsoft.com/en-us/download/dotnet/6.0
+  * Azure Functions Core Tools バージョン 4.x
+    * https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=windows%2Cportal%2Cv2%2Cbash&pivots=programming-language-csharp
+   
   * Visual Studio Code
     * https://code.visualstudio.com/
   * Visual Studio Code 用の C# 拡張機能
@@ -260,7 +261,7 @@ Visual Studio Code で、ビルドと Azure Functions への発行ができる�
     * 利用者管理アプリでユーザーを登録する
     * 詳細は以下のリポジトリを参照
     * https://github.com/yamadakou/Notify-Slack-of-web-meetings-Admin
-2. `gir clone ・・・` などで本プロジェクトをローカルに取得し、 Visual Studio Code で開く。
+2. `git clone ・・・` などで本プロジェクトをローカルに取得し、 Visual Studio Code で開く。
 3. ビルドできるよう、[依存パッケージ](依存パッケージ)を .NET CLI のコマンド `dotnet add package ・・・` で導入する。
 4. `dotnet build` で、ビルドが成功することを確認する。
 5. 以下の Microsoft Docs を参考に、Azure Cosmos DB への接続情報をアプリの設定に追加する。
@@ -338,12 +339,11 @@ Visual Studio Code で、ビルドと Azure Functions への発行ができる�
   | LinqKit.Microsoft.EntityFrameworkCore            |3.1.27|https://www.nuget.org/packages/LinqKit.Microsoft.EntityFrameworkCore/3.1.27|
   | Microsoft.Azure.Functions.Extensions             |1.1.0 |https://www.nuget.org/packages/Microsoft.Azure.Functions.Extensions/1.1.0|
   | Microsoft.Azure.WebJobs.Extensions.CosmosDB      |3.0.10|https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.CosmosDB/3.0.10|
-  | Microsoft.Extensions.DependencyInjection         |3.1.22|https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection/3.1.22|
+  | Microsoft.Extensions.DependencyInjection         |7.0.0|https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection/7.0.0|
   | Microsoft.Extensions.Http                        |3.1.22|https://www.nuget.org/packages/Microsoft.Extensions.Http/3.1.22|
   | Microsoft.Extensions.Http.Polly                  |3.1.22|https://www.nuget.org/packages/Microsoft.Extensions.Http.Polly/3.1.22|
-  | Microsoft.NET.Sdk.Functions                      |3.0.13|https://www.nuget.org/packages/Microsoft.NET.Sdk.Functions/3.0.13|
+  | Microsoft.NET.Sdk.Functions                      |4.1.1|https://www.nuget.org/packages/Microsoft.NET.Sdk.Functions/4.1.1|
   | SourceLink.Copy.PdbFiles                         |2.8.3 |https://www.nuget.org/packages/SourceLink.Copy.PdbFiles/2.8.3|
-
 
 ## （関連リポジトリ）
 * Notify Slack of web meeting CLI
